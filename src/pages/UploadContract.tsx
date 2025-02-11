@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, AlertCircle, FileSignature, Users, Shield, Building2, Loader2 } from 'lucide-react';
 import CountryAutocomplete from '../components/CountryAutocomplete';
 import { ContractAnalysisResponse } from '../types/contract';
+import { getApiUrl, API_ENDPOINTS } from '../config/api';
 
 // DOCX MIME type
 const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -93,16 +94,19 @@ function UploadContract() {
       const apiFormData = new FormData();
       apiFormData.append('file', file);
 
-      const queryParams = new URLSearchParams({
+      const queryParams = {
         description: formData.description,
         contract_type: formData.contractType,
         jurisdiction: formData.country
-      });
+      };
 
-      const response = await fetch(`http://localhost:8010/api/v1/analyze-contract?${queryParams}`, {
-        method: 'POST',
-        body: apiFormData,
-      });
+      const response = await fetch(
+        getApiUrl(API_ENDPOINTS.ANALYZE_CONTRACT, queryParams),
+        {
+          method: 'POST',
+          body: apiFormData,
+        }
+      );
 
       const data: ContractAnalysisResponse = await response.json();
 

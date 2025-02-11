@@ -1,20 +1,26 @@
 /**
- * API configuration and utilities
+ * API configuration
  */
 
-export const API_URL = import.meta.env.VITE_API_URL;
+const isProd = import.meta.env.PROD;
 
-if (!API_URL) {
-  throw new Error('API_URL is not defined in environment variables');
-}
+export const API_BASE_URL = isProd 
+  ? 'https://rcv-backend.onrender.com'
+  : 'http://localhost:8010';
+
+export const API_ENDPOINTS = {
+  ANALYZE_CONTRACT: '/api/v1/analyze-contract',
+} as const;
 
 /**
- * Helper function to construct API endpoints
- * @param path - The endpoint path
- * @returns Full API URL
+ * Helper function to construct API URLs
  */
-export const getApiUrl = (path: string): string => {
-  return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
+export const getApiUrl = (endpoint: string, params?: Record<string, string>): string => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  if (!params) return url;
+
+  const queryParams = new URLSearchParams(params);
+  return `${url}?${queryParams.toString()}`;
 };
 
 /**
@@ -22,14 +28,4 @@ export const getApiUrl = (path: string): string => {
  */
 export const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-};
-
-/**
- * API endpoints
- */
-export const API_ENDPOINTS = {
-  // Add your endpoints here
-  VALIDATE_CONTRACT: '/validate',
-  UPLOAD_CONTRACT: '/upload',
-  GET_CONTRACT: (id: string) => `/contracts/${id}`,
-} as const; 
+}; 
