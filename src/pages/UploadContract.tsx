@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, AlertCircle, FileSignature, Users, Shield, Building2 } from 'lucide-react';
+import { Upload, FileText, AlertCircle, FileSignature, Users, Shield, Building2, Loader2 } from 'lucide-react';
+import CountryAutocomplete from '../components/CountryAutocomplete';
+import { ContractAnalysisResponse } from '../types/contract';
 
 function UploadContract() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     contractType: '',
-    description: ''
+    description: '',
+    country: ''
   });
 
   const contractTypes = [
@@ -67,22 +72,55 @@ function UploadContract() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file) return;
+    if (!file || !formData.contractType || !formData.country) {
+      setError('Please fill in all required fields');
+      return;
+    }
 
-    // In a real application, you would upload the file to your backend here
-    // For demo purposes, we'll simulate an upload and redirect to the viewer
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // Simulate API call
-    setTimeout(() => {
-      navigate('/viewer/123');
-    }, 1000);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const apiFormData = new FormData();
+      apiFormData.append('file', file);
+
+      const queryParams = new URLSearchParams({
+        description: formData.description,
+        contract_type: formData.contractType,
+        jurisdiction: formData.country
+      });
+
+      const response = await fetch(`http://localhost:8010/api/v1/analyze-contract?${queryParams}`, {
+        method: 'POST',
+        body: apiFormData,
+      });
+
+      const data: ContractAnalysisResponse = await response.json();
+
+      if (data.status === 'success' && data.analysis) {
+        // Store the analysis in localStorage or state management solution
+        localStorage.setItem('contractAnalysis', JSON.stringify(data.analysis));
+        navigate('/viewer/123');
+      } else {
+        setError(data.error || 'An error occurred during contract analysis');
+      }
+    } catch (err) {
+      setError('Failed to analyze contract. Please try again.');
+      console.error('Contract analysis error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold text-[#005776] mb-8">Upload Contract for Validation</h1>
+      
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
+          {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* File Upload Section */}
@@ -166,19 +204,43 @@ function UploadContract() {
               required
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Jurisdiction
+            </label>
+            <CountryAutocomplete
+              value={formData.country}
+              onChange={(country) => setFormData({ ...formData, country })}
+              className="w-full"
+            />
+          </div>
         </div>
 
         {/* Submit Button */}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={!file}
+            disabled={!file || loading}
             className={`px-6 py-3 rounded-md text-white font-medium flex items-center space-x-2
-              ${file ? 'bg-[#005776] hover:bg-[#003d52]' : 'bg-gray-300 cursor-not-allowed'}
+              ${
+                file && !loading
+                  ? 'bg-[#005776] hover:bg-[#003d52]'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }
             `}
           >
-            <span>Validate Contract</span>
-            <AlertCircle className="w-5 h-5" />
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Analyzing Contract...</span>
+              </>
+            ) : (
+              <>
+                <span>Validate Contract</span>
+                <AlertCircle className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
       </form>
