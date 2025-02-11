@@ -108,33 +108,53 @@ function UploadContract() {
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data: ContractAnalysisResponse = await response.json();
 
-      if (data.status === 'success' && data.analysis) {
-        // Store the analysis in localStorage
-        localStorage.setItem('contractAnalysis', JSON.stringify(data.analysis));
+      if (data.analysis) {
+        try {
+          // Store the analysis in localStorage
+          localStorage.setItem('contractAnalysis', JSON.stringify(data.analysis));
 
-        // Store the file in localStorage
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64Content = reader.result?.toString().split(',')[1];
-          if (base64Content) {
-            localStorage.setItem('contractFile', JSON.stringify({
-              name: file.name,
-              type: file.type,
-              content: base64Content
-            }));
-            navigate('/viewer/123');
-          }
-        };
-        reader.readAsDataURL(file);
+          // Store the file in localStorage
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const base64Content = reader.result?.toString();
+              if (base64Content) {
+                localStorage.setItem('contractFile', JSON.stringify({
+                  name: file.name,
+                  type: file.type,
+                  content: base64Content
+                }));
+                navigate('/viewer/123');
+              }
+            } catch (storageErr) {
+              console.error('Error storing file:', storageErr);
+              setError('Unable to store contract data. Please try again.');
+              setLoading(false);
+            }
+          };
+          reader.onerror = () => {
+            setError('Failed to process the file. Please try again.');
+            setLoading(false);
+          };
+          reader.readAsDataURL(file);
+        } catch (storageErr) {
+          console.error('Error storing analysis:', storageErr);
+          setError('Unable to store contract data. Please try again.');
+          setLoading(false);
+        }
       } else {
-        setError(data.error || 'An error occurred during contract analysis');
+        setError('Invalid response from server. Please try again.');
+        setLoading(false);
       }
     } catch (err) {
-      setError('Failed to analyze contract. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to analyze contract. Please try again.');
       console.error('Contract analysis error:', err);
-    } finally {
       setLoading(false);
     }
   };

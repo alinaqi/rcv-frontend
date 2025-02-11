@@ -1,19 +1,11 @@
 export interface ContractIssue {
-  type: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  description: string;
   location: {
     paragraph: number;
     text: string;
   };
-  suggestion: string;
-}
-
-export interface ContractSuggestion {
-  category: string;
   description: string;
-  current: string;
-  suggested: string;
+  severity: string;
+  suggestion: string;
 }
 
 export interface Redline {
@@ -25,16 +17,39 @@ export interface Redline {
   };
 }
 
+export interface Law {
+  title: string;
+  description: string;
+  relevance: string;
+  source: string;
+  reference_type: 'law';
+}
+
+export interface Case {
+  title: string;
+  description: string;
+  relevance: string;
+  source: string;
+  reference_type: 'case';
+}
+
+export interface LegalContext {
+  topic: string;
+  jurisdiction: string;
+  summary: string;
+  laws: Law[];
+  cases: Case[];
+}
+
 export interface ContractAnalysis {
   issues: ContractIssue[];
-  suggestions: ContractSuggestion[];
-  risk_score: number;
-  analysis_timestamp: string;
+  suggestions: string[];
+  risk_assessment: string;
+  legal_context: LegalContext;
   redlines: Redline[];
 }
 
 export interface ContractAnalysisResponse {
-  status: 'success' | 'error';
-  analysis?: ContractAnalysis;
-  error: null | string;
+  analysis: ContractAnalysis;
+  legal_context: LegalContext;
 }
