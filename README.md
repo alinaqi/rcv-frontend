@@ -89,4 +89,4 @@ The application uses different environment configurations for development and pr
 
 ## License
 
-[Add License Information] 
+FREE TO USE. THIS IS JUST A MIDNIGHT HACKATHON! :)
