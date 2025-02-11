@@ -16,15 +16,25 @@ export interface ContractSuggestion {
   suggested: string;
 }
 
+export interface Redline {
+  original_text: string;
+  suggested_text: string;
+  location: {
+    paragraph: number;
+    text: string;
+  };
+}
+
 export interface ContractAnalysis {
   issues: ContractIssue[];
   suggestions: ContractSuggestion[];
   risk_score: number;
   analysis_timestamp: string;
+  redlines: Redline[];
 }
 
 export interface ContractAnalysisResponse {
   status: 'success' | 'error';
   analysis?: ContractAnalysis;
-  error?: string | null;
+  error: null | string;
 }

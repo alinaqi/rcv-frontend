@@ -95,7 +95,11 @@ function ContractViewer() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Document Viewer */}
             <div className="bg-white rounded-lg shadow-md p-4 h-[800px]">
-              <DocumentViewer file={file} issues={analysis.issues} />
+              <DocumentViewer 
+                file={file} 
+                issues={analysis.issues} 
+                redlines={analysis.redlines} 
+              />
             </div>
 
             {/* Analysis Panel */}
