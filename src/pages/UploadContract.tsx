@@ -107,9 +107,23 @@ function UploadContract() {
       const data: ContractAnalysisResponse = await response.json();
 
       if (data.status === 'success' && data.analysis) {
-        // Store the analysis in localStorage or state management solution
+        // Store the analysis in localStorage
         localStorage.setItem('contractAnalysis', JSON.stringify(data.analysis));
-        navigate('/viewer/123');
+
+        // Store the file in localStorage
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Content = reader.result?.toString().split(',')[1];
+          if (base64Content) {
+            localStorage.setItem('contractFile', JSON.stringify({
+              name: file.name,
+              type: file.type,
+              content: base64Content
+            }));
+            navigate('/viewer/123');
+          }
+        };
+        reader.readAsDataURL(file);
       } else {
         setError(data.error || 'An error occurred during contract analysis');
       }

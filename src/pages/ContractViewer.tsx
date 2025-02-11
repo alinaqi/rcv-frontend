@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { AlertTriangle, CheckCircle, XCircle, Mail, Phone, Globe, AlertCircle as AlertIcon } from 'lucide-react';
 import { ContractAnalysis } from '../types/contract';
+import DocumentViewer from '../components/DocumentViewer';
 
 function ContractViewer() {
-  const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [activeTab, setActiveTab] = useState('issues');
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
+    // Load analysis from localStorage
     const storedAnalysis = localStorage.getItem('contractAnalysis');
     if (storedAnalysis) {
       setAnalysis(JSON.parse(storedAnalysis));
+    }
+
+    // Load file from localStorage (if stored as base64)
+    const storedFile = localStorage.getItem('contractFile');
+    if (storedFile) {
+      const { name, type, content } = JSON.parse(storedFile);
+      const byteCharacters = atob(content);
+      const byteNumbers = new Array(byteCharacters.length);
+      
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      const file = new File([byteArray], name, { type });
+      setFile(file);
     }
   }, []);
 
@@ -79,10 +93,9 @@ function ContractViewer() {
       <div className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Contract Content Viewer - You might want to implement this based on your needs */}
-            <div className="bg-white rounded-lg shadow-md p-4 h-[800px] overflow-auto">
-              <h2 className="text-xl font-bold mb-4">Contract Content</h2>
-              {/* Add contract content viewer here */}
+            {/* Document Viewer */}
+            <div className="bg-white rounded-lg shadow-md p-4 h-[800px]">
+              <DocumentViewer file={file} issues={analysis.issues} />
             </div>
 
             {/* Analysis Panel */}
