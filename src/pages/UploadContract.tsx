@@ -4,6 +4,9 @@ import { Upload, FileText, AlertCircle, FileSignature, Users, Shield, Building2,
 import CountryAutocomplete from '../components/CountryAutocomplete';
 import { ContractAnalysisResponse } from '../types/contract';
 
+// DOCX MIME type
+const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 function UploadContract() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
@@ -57,15 +60,21 @@ function UploadContract() {
     e.preventDefault();
     setDragging(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/pdf') {
+    if (droppedFile && droppedFile.type === DOCX_MIME_TYPE) {
       setFile(droppedFile);
+    } else {
+      setError('Please upload a .docx file');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
+    if (selectedFile && selectedFile.type === DOCX_MIME_TYPE) {
       setFile(selectedFile);
+      setError(null);
+    } else {
+      setFile(null);
+      setError('Please upload a .docx file');
     }
   };
 
@@ -146,11 +155,12 @@ function UploadContract() {
                 Browse Files
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={handleFileChange}
                 />
               </label>
+              <p className="text-xs text-gray-500 mt-2">Only .docx files are supported</p>
             </div>
           )}
         </div>
