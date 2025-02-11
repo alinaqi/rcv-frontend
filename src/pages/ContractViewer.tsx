@@ -1,46 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
-import { AlertTriangle, CheckCircle, XCircle, Mail, Phone, Globe } from 'lucide-react';
-
-// Mock data for contract analysis
-const mockAnalysis = {
-  score: 85,
-  issues: [
-    {
-      severity: 'high',
-      section: 'Liability Clause',
-      description: 'Unlimited liability clause detected - consider adding reasonable caps',
-      recommendation: 'Add liability caps based on contract value or insurance coverage'
-    },
-    {
-      severity: 'medium',
-      section: 'Payment Terms',
-      description: 'Payment terms exceed standard 30-day policy',
-      recommendation: 'Adjust payment terms to align with company policy'
-    },
-    {
-      severity: 'low',
-      section: 'Notice Period',
-      description: 'Notice period shorter than recommended',
-      recommendation: 'Consider extending notice period to standard 60 days'
-    }
-  ],
-  suggestions: [
-    'Add force majeure clause to address unforeseen circumstances',
-    'Include specific performance metrics and KPIs',
-    'Add dispute resolution mechanism'
-  ]
-};
+import { AlertTriangle, CheckCircle, XCircle, Mail, Phone, Globe, AlertCircle as AlertIcon } from 'lucide-react';
+import { ContractAnalysis } from '../types/contract';
 
 function ContractViewer() {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [activeTab, setActiveTab] = useState('issues');
+  const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
+
+  useEffect(() => {
+    const storedAnalysis = localStorage.getItem('contractAnalysis');
+    if (storedAnalysis) {
+      setAnalysis(JSON.parse(storedAnalysis));
+    }
+  }, []);
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return 'text-red-700';
       case 'high':
         return 'text-red-600';
       case 'medium':
@@ -52,8 +33,25 @@ function ContractViewer() {
     }
   };
 
+  const getSeverityBgColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return 'bg-red-50';
+      case 'high':
+        return 'bg-red-50';
+      case 'medium':
+        return 'bg-yellow-50';
+      case 'low':
+        return 'bg-blue-50';
+      default:
+        return 'bg-gray-50';
+    }
+  };
+
   const getSeverityIcon = (severity: string) => {
-    switch (severity) {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return <AlertIcon className="w-5 h-5 text-red-700" />;
       case 'high':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'medium':
@@ -65,19 +63,26 @@ function ContractViewer() {
     }
   };
 
+  if (!analysis) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">No Analysis Data Available</h2>
+          <p className="text-gray-500">Please upload a contract to view analysis.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* PDF Viewer */}
-            <div className="bg-white rounded-lg shadow-md p-4 h-[800px]">
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl="/sample-contract.pdf"
-                  plugins={[defaultLayoutPluginInstance]}
-                />
-              </Worker>
+            {/* Contract Content Viewer - You might want to implement this based on your needs */}
+            <div className="bg-white rounded-lg shadow-md p-4 h-[800px] overflow-auto">
+              <h2 className="text-xl font-bold mb-4">Contract Content</h2>
+              {/* Add contract content viewer here */}
             </div>
 
             {/* Analysis Panel */}
@@ -85,10 +90,17 @@ function ContractViewer() {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-[#005776] mb-2">Contract Analysis</h2>
                 <div className="flex items-center space-x-2">
-                  <div className="text-lg font-semibold">Score:</div>
-                  <div className={`text-2xl font-bold ${mockAnalysis.score >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {mockAnalysis.score}%
+                  <div className="text-lg font-semibold">Risk Score:</div>
+                  <div className={`text-2xl font-bold ${
+                    analysis.risk_score <= 30 ? 'text-green-600' : 
+                    analysis.risk_score <= 70 ? 'text-yellow-600' : 
+                    'text-red-600'
+                  }`}>
+                    {analysis.risk_score}%
                   </div>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Analysis performed at: {new Date(analysis.analysis_timestamp).toLocaleString()}
                 </div>
               </div>
 
@@ -103,7 +115,7 @@ function ContractViewer() {
                     }`}
                     onClick={() => setActiveTab('issues')}
                   >
-                    Issues
+                    Issues ({analysis.issues.length})
                   </button>
                   <button
                     className={`py-2 px-4 border-b-2 font-medium ${
@@ -113,38 +125,55 @@ function ContractViewer() {
                     }`}
                     onClick={() => setActiveTab('suggestions')}
                   >
-                    Suggestions
+                    Suggestions ({analysis.suggestions.length})
                   </button>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="space-y-6">
+              <div className="space-y-6 overflow-auto max-h-[600px] pr-2">
                 {activeTab === 'issues' ? (
                   <div className="space-y-4">
-                    {mockAnalysis.issues.map((issue, index) => (
-                      <div key={index} className="border rounded-lg p-4">
+                    {analysis.issues.map((issue, index) => (
+                      <div key={index} className={`border rounded-lg p-4 ${getSeverityBgColor(issue.severity)}`}>
                         <div className="flex items-center space-x-2 mb-2">
                           {getSeverityIcon(issue.severity)}
                           <span className={`font-semibold ${getSeverityColor(issue.severity)}`}>
-                            {issue.severity.charAt(0).toUpperCase() + issue.severity.slice(1)} Severity
+                            {issue.type}
                           </span>
                         </div>
-                        <h3 className="font-semibold mb-1">{issue.section}</h3>
-                        <p className="text-gray-600 mb-2">{issue.description}</p>
-                        <p className="text-sm text-gray-500">
-                          <span className="font-medium">Recommendation:</span> {issue.recommendation}
-                        </p>
+                        <div className="text-gray-600 mb-3">{issue.description}</div>
+                        <div className="bg-white p-3 rounded border border-gray-200 mb-2">
+                          <div className="text-sm text-gray-500 mb-1">Found in paragraph {issue.location.paragraph}:</div>
+                          <div className="text-gray-700 italic">"{issue.location.text}"</div>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium text-[#005776]">Suggestion:</span>
+                          <p className="text-gray-600 mt-1">{issue.suggestion}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {mockAnalysis.suggestions.map((suggestion, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <p className="text-gray-600">{suggestion}</p>
+                    {analysis.suggestions.map((suggestion, index) => (
+                      <div key={index} className="border rounded-lg p-4 bg-green-50">
+                        <div className="flex items-start space-x-3">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-1" />
+                          <div>
+                            <h3 className="font-semibold text-green-800 mb-2">{suggestion.category}</h3>
+                            <p className="text-gray-600 mb-3">{suggestion.description}</p>
+                            <div className="bg-white p-3 rounded border border-gray-200">
+                              <div className="mb-2">
+                                <span className="text-sm font-medium text-gray-500">Current:</span>
+                                <p className="text-gray-700 mt-1">{suggestion.current}</p>
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-green-600">Suggested:</span>
+                                <p className="text-gray-700 mt-1">{suggestion.suggested}</p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
